@@ -2,60 +2,56 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "bigkola1/java-react-example"
-        EC2_IP = "13.59.195.211"
+        DOCKERHUB_REPO = "bigkola1/java-react-example"
+        DOCKERHUB_CRED = credentials('dockerhub-creds')   // Jenkins Docker Hub credential ID
+        SSH_CRED       = 'ec2-ssh'                        // Jenkins SSH credential ID
+        EC2_USER       = 'ec2-user'
+        EC2_HOST       = '13.59.195.211'
+        APP_PORT       = '7071'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main', url: 'https://github.com/Big-Kola/aws-practice.git'
+            }
+        }
+
+        stage('Build App') {
+            steps {
+                // Using system-installed Gradle since no gradlew in repo
+                sh 'gradle clean build'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE_NAME}:latest ."
+                sh "docker build -t $DOCKERHUB_REPO:$BUILD_NUMBER ."
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh """
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push ${IMAGE_NAME}:latest
-                    """
-                }
+                sh """
+                   echo $DOCKERHUB_CRED_PSW | docker login -u $DOCKERHUB_CRED_USR --password-stdin
+                   docker push $DOCKERHUB_REPO:$BUILD_NUMBER
+                """
             }
         }
 
         stage('Deploy to EC2') {
             steps {
-                sshagent(['ec2-server-key']) {
+                sshagent(credentials: [SSH_CRED]) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_IP} '
-                            docker pull ${IMAGE_NAME}:latest &&
-                            docker stop java-react-example || true &&
-                            docker rm java-react-example || true &&
-                            docker run -d -p 7071:7071 --name java-react-example ${IMAGE_NAME}:latest
-                        '
+                       ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
+                         docker pull $DOCKERHUB_REPO:$BUILD_NUMBER &&
+                         docker stop java-react-app || true &&
+                         docker rm java-react-app || true &&
+                         docker run -d --name java-react-app -p $APP_PORT:$APP_PORT $DOCKERHUB_REPO:$BUILD_NUMBER
+                       '
                     """
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Pipeline finished successfully!'
-        }
-        failure {
-            echo 'Pipeline failed!'
         }
     }
 }
