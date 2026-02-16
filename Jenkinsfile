@@ -2,25 +2,38 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout Source') {
+
+        stage('Test') {
             steps {
-                checkout scm
+                script {
+                    echo 'Testing the app...'   // You can add shell commands here later
+                }
             }
         }
 
-        stage('Build & Test') {
+        stage('Build') {
             steps {
-                sh './gradlew clean build'
+                script {
+                    echo 'Building the app...'  // Replace with actual build commands later
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    echo 'Deploying the app...'  // Replace with actual deploy commands later
+                }
             }
         }
     }
 
     post {
         success {
-            echo "Build succeeded!"
+            echo 'Pipeline finished successfully!'
         }
         failure {
-            echo "Build failed."
+            echo 'Pipeline failed!'
         }
     }
 }
