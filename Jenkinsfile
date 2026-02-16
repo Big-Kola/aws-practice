@@ -1,31 +1,51 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "bigkola1/java-react-example"
+        EC2_IP     = "13.59.195.211"
+    }
+
     stages {
 
-        stage('Test') {
+        stage('Checkout') {
             steps {
-                script {
-                    echo 'Testing the app...' 
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${IMAGE_NAME}:latest ."
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                        docker push ${IMAGE_NAME}:latest
+                    """
                 }
             }
         }
 
-        stage('Build') {
+        stage('Deploy to EC2') {
             steps {
-                script {
-                    echo 'Building the app...'  // Replace with actual build commands later
-                }
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                script {
-                    def dockerCmd = 'docker run -p 7071:7071 -d bigkola1/java-react-example:latest'
-                    sshagent(['ec2-server-key']) {
-                        sh "ssh -o StrictHostKeyChecking=no ec2-user@13.59.195.211 ${dockerCmd}"
-                    }
+                sshagent(['ec2-server-key']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_IP} '
+                            docker pull ${IMAGE_NAME}:latest &&
+                            docker stop java-react-example || true &&
+                            docker rm java-react-example || true &&
+                            docker run -d -p 7071:7071 --name java-react-example ${IMAGE_NAME}:latest
+                        '
+                    """
                 }
             }
         }
@@ -33,7 +53,7 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline finished successfully!'
+            echo 'Pipeline completed successfully!'
         }
         failure {
             echo 'Pipeline failed!'
