@@ -1,9 +1,9 @@
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk-focal
 
 WORKDIR /app
 
-# Copy the already built jar from local repo
-COPY build/libs/*.jar app.jar
+# Copy the pre-built jar
+COPY build/libs/java-react-example.jar app.jar
 
 # Expose the app port
 EXPOSE 7071
