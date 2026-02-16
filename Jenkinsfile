@@ -6,7 +6,7 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    echo 'Testing the app...'   // You can add shell commands here later
+                    echo 'Testing the app...' 
                 }
             }
         }
@@ -22,7 +22,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    echo 'Deploying the app...'  // Replace with actual deploy commands later
+                    def dockerCmd = 'docker run -p 7071:7071 -d bigkola1/java-react-example:latest'
+                    sshagent(['ec2-server-key']) {
+                        sh "ssh -o StrictHostKeyChecking=no ec2-user@13.59.195.211 ${dockerCmd}"
+                    }
                 }
             }
         }
