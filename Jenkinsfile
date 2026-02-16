@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         DOCKERHUB_REPO = "bigkola1/java-react-example"
-        DOCKERHUB_CRED = credentials('dockerhub-creds')   // Jenkins Docker Hub credential ID
-        SSH_CRED       = 'ec2-server-key'                 // EC2 SSH credential ID
+        DOCKERHUB_CRED = credentials('dockerhub-creds')
+        SSH_CRED       = 'ec2-server-key'
         EC2_USER       = 'ec2-user'
         EC2_HOST       = '13.59.195.211'
         APP_PORT       = '7071'
@@ -14,15 +14,6 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/Big-Kola/aws-practice.git'
-            }
-        }
-
-        stage('Build App') {
-            steps {
-                // Use Gradle Docker image to build app
-                sh """
-                docker run --rm -v $WORKSPACE:/app -w /app gradle:8.3.1-jdk17 gradle clean build --no-daemon
-                """
             }
         }
 
