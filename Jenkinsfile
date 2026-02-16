@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKERHUB_REPO = "bigkola1/java-react-example"
         DOCKERHUB_CRED = credentials('dockerhub-creds')   // Jenkins Docker Hub credential ID
-        SSH_CRED       = 'ec2-ssh'                        // Jenkins SSH credential ID
+        SSH_CRED       = 'ec2-server-key'                 // Updated EC2 SSH credential ID
         EC2_USER       = 'ec2-user'
         EC2_HOST       = '13.59.195.211'
         APP_PORT       = '7071'
