@@ -1,26 +1,22 @@
-# Stage 1: Build the Java application
+# Stage 1: Build Java app using Gradle
 FROM gradle:8-jdk17 AS builder
 
-# Set working directory
 WORKDIR /app
-
-# Copy all project files
 COPY . .
 
-# Build the application (produces JAR in build/libs/)
+# Build the JAR
 RUN gradle clean build
 
-# Stage 2: Create a lightweight runtime image
-FROM openjdk:17-jdk
+# Stage 2: Runtime image
+FROM openjdk:17-jdk-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy the JAR from the builder stage
+# Copy the JAR from builder
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# Expose the port your app uses
+# Expose the port
 EXPOSE 7071
 
-# Run the JAR when container starts
+# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

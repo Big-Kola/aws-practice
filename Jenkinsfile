@@ -3,11 +3,10 @@ pipeline {
 
     environment {
         IMAGE_NAME = "bigkola1/java-react-example"
-        EC2_IP     = "13.59.195.211"
+        EC2_IP = "13.59.195.211"
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -28,7 +27,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh """
-                        echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                         docker push ${IMAGE_NAME}:latest
                     """
                 }
@@ -53,7 +52,7 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo 'Pipeline finished successfully!'
         }
         failure {
             echo 'Pipeline failed!'
