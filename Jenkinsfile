@@ -7,7 +7,7 @@ pipeline {
         SSH_CRED       = 'ec2-server-key'
         EC2_USER       = 'ec2-user'
         EC2_HOST       = '13.59.195.211'
-        APP_PORT       = '7071'
+        APP_DIR        = '/home/ec2-user'  // deployment folder on EC2
     }
 
     stages {
@@ -19,7 +19,6 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                // Build Docker image using pre-built jar
                 sh "docker build -t $DOCKERHUB_REPO:$BUILD_NUMBER ."
             }
         }
@@ -33,16 +32,20 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy to EC2 via Docker Compose') {
             steps {
                 sshagent(credentials: [SSH_CRED]) {
                     sh """
-                       ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
-                         docker pull $DOCKERHUB_REPO:$BUILD_NUMBER &&
-                         docker stop java-react-app || true &&
-                         docker rm java-react-app || true &&
-                         docker run -d --name java-react-app -p $APP_PORT:$APP_PORT $DOCKERHUB_REPO:$BUILD_NUMBER
-                       '
+                        # Copy docker-compose.yaml to EC2 home directory
+                        scp -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:$APP_DIR/
+
+                        # SSH into EC2 and deploy
+                        ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
+                            cd $APP_DIR &&
+                            export BUILD_NUMBER=$BUILD_NUMBER &&
+                            docker-compose -f docker-compose.yaml pull &&
+                            docker-compose -f docker-compose.yaml up -d
+                        '
                     """
                 }
             }
