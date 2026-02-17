@@ -3,14 +3,16 @@ pipeline {
 
     environment {
         DOCKERHUB_REPO = "bigkola1/java-react-example"
+        IMAGE_TAG      = "${BUILD_NUMBER}"
         DOCKERHUB_CRED = credentials('dockerhub-creds')
         SSH_CRED       = 'ec2-server-key'
         EC2_USER       = 'ec2-user'
         EC2_HOST       = '13.59.195.211'
-        APP_DIR        = '/home/ec2-user'  // deployment folder on EC2
+        APP_DIR        = '/home/ec2-user'
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/Big-Kola/aws-practice.git'
@@ -19,7 +21,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t $DOCKERHUB_REPO:$BUILD_NUMBER ."
+                sh "docker build -t $DOCKERHUB_REPO:$IMAGE_TAG ."
             }
         }
 
@@ -27,7 +29,7 @@ pipeline {
             steps {
                 sh """
                    echo $DOCKERHUB_CRED_PSW | docker login -u $DOCKERHUB_CRED_USR --password-stdin
-                   docker push $DOCKERHUB_REPO:$BUILD_NUMBER
+                   docker push $DOCKERHUB_REPO:$IMAGE_TAG
                 """
             }
         }
@@ -42,15 +44,12 @@ pipeline {
                         # SSH into EC2 and deploy safely
                         ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
                             cd $APP_DIR &&
-                            export BUILD_NUMBER=$BUILD_NUMBER &&
-                            # Stop and remove old containers + orphans (volumes preserved)
-                            docker-compose -f docker-compose.yaml down --remove-orphans &&
-                            # Pull latest images
-                            docker-compose -f docker-compose.yaml pull &&
-                            # Start containers in detached mode
-                            docker-compose -f docker-compose.yaml up -d &&
-                            # Show running container status
-                            docker-compose -f docker-compose.yaml ps
+                            export DOCKERHUB_REPO='$DOCKERHUB_REPO' &&
+                            export IMAGE_TAG='$IMAGE_TAG' &&
+                            docker-compose down --remove-orphans &&
+                            docker-compose pull &&
+                            docker-compose up -d &&
+                            docker-compose ps
                         '
                     """
                 }
