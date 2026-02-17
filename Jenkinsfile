@@ -39,13 +39,13 @@ pipeline {
                         # Copy docker-compose.yaml to EC2
                         scp -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:$APP_DIR/
 
-                        # SSH into EC2 and deploy cleanly
+                        # SSH into EC2 and deploy safely
                         ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
                             cd $APP_DIR &&
                             export BUILD_NUMBER=$BUILD_NUMBER &&
-                            # Stop old containers but keep volumes
-                            docker-compose -f docker-compose.yaml down &&
-                            # Pull the latest images
+                            # Stop and remove old containers + orphans (volumes preserved)
+                            docker-compose -f docker-compose.yaml down --remove-orphans &&
+                            # Pull latest images
                             docker-compose -f docker-compose.yaml pull &&
                             # Start containers in detached mode
                             docker-compose -f docker-compose.yaml up -d &&
