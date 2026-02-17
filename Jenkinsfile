@@ -39,9 +39,9 @@ pipeline {
                         # Copy docker-compose.yaml to EC2
                         scp -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:$APP_DIR/
 
-                        # SSH into EC2 and run the deploy script
+                        # SSH into EC2 and run the deployment script
                         ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
-                            /home/ec2-user/deploy.sh
+                            /home/ec2-user/server-cmds.sh
                         '
                     """
                 }
