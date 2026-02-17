@@ -32,16 +32,19 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2 via Shell Script') {
+        stage('Deploy to EC2 via Docker Compose') {
             steps {
                 sshagent(credentials: [SSH_CRED]) {
                     sh """
-                        # Copy docker-compose.yaml to EC2
+                        # Copy docker-compose.yaml to EC2 home directory
                         scp -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:$APP_DIR/
 
-                        # SSH into EC2 and run the deployment script
+                        # SSH into EC2 and deploy
                         ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST '
-                            /home/ec2-user/server-cmds.sh
+                            cd $APP_DIR &&
+                            export BUILD_NUMBER=$BUILD_NUMBER &&
+                            docker-compose -f docker-compose.yaml pull &&
+                            docker-compose -f docker-compose.yaml up -d
                         '
                     """
                 }
