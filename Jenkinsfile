@@ -36,7 +36,7 @@ pipeline {
             steps {
                 sshagent(credentials: [SSH_CRED]) {
                     sh """
-                        # Copy docker-compose.yaml to EC2 home directory
+                        # Copy docker-compose.yaml to EC2
                         scp -o StrictHostKeyChecking=no docker-compose.yaml $EC2_USER@$EC2_HOST:$APP_DIR/
 
                         # SSH into EC2 and deploy
@@ -44,7 +44,8 @@ pipeline {
                             cd $APP_DIR &&
                             export BUILD_NUMBER=$BUILD_NUMBER &&
                             docker-compose -f docker-compose.yaml pull &&
-                            docker-compose -f docker-compose.yaml up -d
+                            docker-compose -f docker-compose.yaml up -d &&
+                            docker-compose -f docker-compose.yaml ps
                         '
                     """
                 }
